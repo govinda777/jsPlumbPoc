@@ -1,51 +1,66 @@
 ﻿(function ($) {
-    $.fn.jointjsHelper = function (selector, options) {
+    $.fn.jointjsHelper = function (options) {
         // settings
         var defaults = {
+            'idDiagramMain': 'diagramMain',
+            'idNewElments': 'newElments',
+            'idModal': 'modalElement',
+            'detailElement': {
+                'idHeader': 'hederDetailElement',
+                'idLabel' : 'txtLabelDetailElement',
+                'idElement' : 'hdnIdElement'
+            },
             'diagramMain': {
                 'width': 825,
                 'height': 500
-            },
-            'diagramNewElments': {
-                'width': 600,
-                'height': 500
-            },
+            }
         };
 
         this.settings = $.extend({}, defaults, options);
 
         //Variables
         var base = this;
-        var obj = $(selector);
+        var mensageErro = {
+            diagramNotFound: { id: 1, msg: "Driagrama principal não encontrado" },
+            areaNewElementsNotFound: { id: 2, msg: "Area de novos elementos não encontrados" },
+            modalNotFound: { id: 3, msg: "Modal não encontrada" }
+        };
         this.graphMain = null;
         this.paperMain = null;
-        var idDiagramMain = "diagramMain";
-        var idDiagramNewElments = "diagramNewElments";
-        var structure = '<div class="row"> \n' +
-                            '<div id="' + idDiagramNewElments + '" class="col-xs-3" style="background-color:bisque"> \n' +
-                            '</div> \n' +
-                            '<div id="' + idDiagramMain + '" class="col-xs-9" style="background-color:azure"> \n' +
-                            '</div> \n' +
-                        '</div>'
 
         //Events
         $(document).ready(function () {
             base.Initiation();
         });
-        
+
+        this.SetEventDblClick = function (paper, callFunction) {
+            paper.on('cell:pointerdblclick',
+                    function (cellView, evt, x, y) {
+                        callFunction(cellView, evt, x, y);
+                    });
+        };
+
         //Functions
         this.Initiation = function () {
-            this.CreateStructure(obj);
+            this.ValidationParameters();
             this.InitiationDiagramMain();
         };
 
-        this.CreateStructure = function (selector) {
+        this.ValidationParameters = function () {
 
-            if (!selector.hasClass("container")) {
-                selector.attr("class", selector.attr("class") + "container");
+            if ($(this.settings.idDiagramMain).size == 0) {
+                throw GetMsgError(mensageErro.diagramNotFound)
             }
 
-            selector.append(structure);
+            if ($(this.settings.idNewElments).size == 0) {
+                throw GetMsgError(mensageErro.areaNewElementsNotFound)
+            }
+
+            if ($(this.settings.idModal).size == 0) {
+                throw GetMsgError(mensageErro.areaNewElementsNotFound)
+            }
+
+            
         };
 
         this.InitiationDiagramMain = function () {
@@ -53,7 +68,7 @@
             this.graphMain = new joint.dia.Graph;
 
             this.paperMain = new joint.dia.Paper({
-                el: $('#' + idDiagramMain),
+                el: $('#' + this.settings.idDiagramMain),
                 width: this.settings.diagramMain.width,
                 height: this.settings.diagramMain.height,
                 gridSize: 1,
@@ -65,10 +80,7 @@
                 markAvailable: true
             });
 
-            this.AddCircle(this.graphMain);
-            this.AddRect(this.graphMain);
-            this.AddDiamond(this.graphMain);
-
+            this.SetEventDblClick(this.paperMain, this.DblClick);
         };
 
         this.AddRect = function (graph, optionsRect) {
@@ -98,8 +110,7 @@
                 }
             });
 
-            if (settingsRect.rotate != 0)
-            {
+            if (settingsRect.rotate != 0) {
                 rect.rotate(settingsRect.rotate);
                 rect.attr('.label/transform', 'rotate(' + (settingsRect.rotate * -1) + ')');
                 rect.attr('.label/ref-y', .6);
@@ -110,7 +121,6 @@
             return rect;
 
         };
-
 
         this.AddDiamond = function (graph, optionsDiamond) {
 
@@ -129,7 +139,7 @@
 
             this.AddRect(graph, settingsDiamond)
         };
-        
+
         this.AddCircle = function (graph, optionsCircle) {
 
             var defaultsCircle = {
@@ -145,13 +155,13 @@
             joint.shapes.devs.CircleModel = joint.shapes.devs.Model.extend({
 
                 markup: '<g class="rotatable"><g class="scalable"><circle class="body"/></g><text class="label"/><g class="inPorts"/><g class="outPorts"/></g>',
-                
+
                 defaults: joint.util.deepSupplement({
 
                     type: 'devs.CircleModel',
                     attrs: {
                         '.body': { r: 50, cx: 50, stroke: 'blue', fill: 'lightblue' },
-                        '.label': { text: settingsCircle.label , 'ref-y': 0.5, 'y-alignment': 'middle' },
+                        '.label': { text: settingsCircle.label, 'ref-y': 0.5, 'y-alignment': 'middle' },
                         '.port-body': { width: 10, height: 10, x: -5, stroke: 'gray', fill: 'lightgray', magnet: 'active' }
                     }
 
@@ -170,6 +180,36 @@
             graph.addCell(circleModel);
 
             return circleModel;
+        };
+
+        this.DblClick = function (cellView, evt, x, y) {
+            base.CreateElementDetail(cellView.model);
+            base.LoadDetail(cellView);
+        };
+
+        this.CreateElementDetail = function (model) {
+            
+            var modal = $('#' + this.settings.idModal);
+
+            modal.modal('show');
+
+            modal.on('hidden', function () {
+                this.SaveDetail(model);
+            });
+        };
+
+        this.LoadDetail = function (cellView) {
+            $("#" + this.settings.detailElement.idElement).val(cellView.model.id);
+            $("#" + this.settings.detailElement.idHeader)[0].innerText = cellView.model.attr('.label/text');
+            $("#" + this.settings.detailElement.idLabel).val(cellView.model.attr('.label/text'));
+        };
+
+        this.SaveDetail = function (model) {
+            cellView.model.attr('.label/text', $("#" + this.settings.detailElement.idLabel).val());
+        }
+
+        this.GetMsgError = function (objMsg) {
+            return "Menssage :" + objMsg.msg + " | Id :" + objMsg.id;
         };
 
     };

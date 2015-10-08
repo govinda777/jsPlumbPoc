@@ -2,15 +2,57 @@
     ViewBag.Title = "Contact";
 }
 
+<style>
+    li:hover {
+        background: #f8f8f8;
+        cursor: pointer;
+    }
+
+</style>
 
 <div class="container" id="diagram">
+    <div class="row">
+        <div id="newElments" class="col-xs-3" style="background-color:bisque">
+            <h3>Elements</h3>
+            <ul>
+                <li onclick="jointjsHelper.AddRect(jointjsHelper.graphMain)">Rect</li>
+                <li onclick="jointjsHelper.AddDiamond(jointjsHelper.graphMain)">Diamond</li>
+                <li onclick="jointjsHelper.AddCircle(jointjsHelper.graphMain)">Circle</li>
+            </ul>
+        </div>
 
+        <div id="diagramMain" class="col-xs-9" style="background-color:azure">
+
+        </div>
+
+        <!-- Modal -->
+        <div class="modal fade" id="modalElement" role="dialog">
+            <div class="modal-dialog">
+                <input type="hidden" id="hdnIdElement" />
+                <!-- Modal content-->
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4 class="modal-title" id="hederDetailElement">Element</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="inputdefault">Nome</label>
+                            <input class="form-control" id="txtLabelDetailElement" type="text">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>
 
-
-
 <script type="text/javascript">
-    
-    var jointjsHelper =  new $.fn.jointjsHelper("#diagram");
-    
+
+    var jointjsHelper = new $.fn.jointjsHelper();
+
 </script>
