@@ -27,10 +27,16 @@
         };
         this.graphMain = null;
         this.paperMain = null;
+        var selection;
+        var selectionView;
 
         //Events
         $(document).ready(function () {
             base.Initiation();
+
+            $('#' + base.settings.idModal).on('hidden', function () {
+                base.SaveDetail(model);
+            });
         });
 
         this.SetEventDblClick = function (paper, callFunction) {
@@ -65,6 +71,7 @@
 
         this.InitiationDiagramMain = function () {
 
+            selection = new Backbone.Collection;
             this.graphMain = new joint.dia.Graph;
 
             this.paperMain = new joint.dia.Paper({
@@ -79,8 +86,33 @@
                 // Enable marking available cells & magnets
                 markAvailable: true
             });
+                        
+            selectionView = new joint.ui.SelectionView({ paper: this.paperMain, graph: this.graphMain, model: selection });
+
+            this.paperMain.on('blank:pointerdown', selectionView.startSelecting);
+
+            this.paperMain.on('cell:pointerup', function (cellView, evt) {
+                alert('cell:pointerup');
+                if ((evt.ctrlKey || evt.metaKey) && !(cellView.model instanceof joint.dia.Link)) {
+                    selection.add(cellView.model);
+                    selectionView.createSelectionBox(cellView);
+                }
+            });
+
+            selectionView.on('selection-box:pointerdown', function (evt) {
+                alert('selection-box:pointerdown');
+                if (evt.ctrlKey || evt.metaKey) {
+                    var cell = selection.get($(evt.target).data('model'));
+                    selection.reset(selection.without(cell));
+                    selectionView.destroySelectionBox(this.paperMain.findViewByModel(cell));
+                }
+            });
+
 
             this.SetEventDblClick(this.paperMain, this.DblClick);
+
+
+
         };
 
         this.AddRect = function (graph, optionsRect) {
@@ -192,10 +224,6 @@
             var modal = $('#' + this.settings.idModal);
 
             modal.modal('show');
-
-            modal.on('hidden', function () {
-                this.SaveDetail(model);
-            });
         };
 
         this.LoadDetail = function (cellView) {
@@ -205,7 +233,11 @@
         };
 
         this.SaveDetail = function (model) {
+
+            debugger;
+
             cellView.model.attr('.label/text', $("#" + this.settings.detailElement.idLabel).val());
+
         }
 
         this.GetMsgError = function (objMsg) {
